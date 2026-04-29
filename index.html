@@ -3,239 +3,881 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lotto Generator</title>
+    <title>AI 로또 번호 생성기</title>
     <style>
+        :root {
+            color-scheme: dark;
+            --bg: #080b12;
+            --ink: #eef3ff;
+            --muted: #98a5ba;
+            --line: rgba(255, 255, 255, 0.11);
+            --surface: #101621;
+            --surface-soft: #151d2a;
+            --primary: #7c5cff;
+            --primary-dark: #4c35bc;
+            --teal: #00a0a8;
+            --red: #d94857;
+            --amber: #f6bd4f;
+            --blue: #4c95ff;
+            --coral: #f06f77;
+            --gray: #8b95a8;
+            --green: #68b36b;
+            --shadow: rgba(0, 0, 0, 0.38);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px 0;
+            padding: 32px 16px;
+            display: grid;
+            place-items: center;
+            font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 18% 12%, rgba(124, 92, 255, 0.24), transparent 30%),
+                radial-gradient(circle at 83% 20%, rgba(0, 160, 168, 0.20), transparent 28%),
+                radial-gradient(circle at 45% 92%, rgba(246, 189, 79, 0.12), transparent 34%),
+                linear-gradient(135deg, #05070c 0%, var(--bg) 48%, #0d1420 100%);
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 95%;
+
+        .app {
+            width: min(920px, 100%);
+            display: grid;
+            grid-template-columns: 0.85fr 1.15fr;
+            background: rgba(16, 22, 33, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            box-shadow: 0 28px 90px var(--shadow);
+            overflow: hidden;
+            backdrop-filter: blur(12px);
         }
-        h1 { margin: 0 0 10px 0; color: #333; font-size: 24px; }
-        p.desc { color: #666; font-size: 14px; margin-bottom: 25px; }
-        
-        #resultArea {
+
+        .intro {
+            padding: 34px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 25px;
-            min-height: 200px;
-            justify-content: center;
+            justify-content: space-between;
+            gap: 28px;
+            background:
+                linear-gradient(150deg, rgba(124, 92, 255, 0.78), rgba(0, 160, 168, 0.62) 58%, rgba(7, 10, 18, 0.92)),
+                #111827;
+            color: white;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: fit-content;
+            padding: 9px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            background: rgba(5, 7, 12, 0.24);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .brand-mark {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--amber);
+            color: #151922;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        h1 {
+            margin: 28px 0 14px;
+            font-size: clamp(30px, 5vw, 48px);
+            line-height: 1.08;
+            letter-spacing: 0;
+        }
+
+        .desc {
+            margin: 0;
+            color: rgba(238, 243, 255, 0.80);
+            font-size: 15px;
+            line-height: 1.7;
+            word-break: keep-all;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .summary-item {
+            padding: 14px 12px;
+            border-radius: 16px;
+            background: rgba(5, 7, 12, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.13);
+        }
+
+        .summary-item strong {
+            display: block;
+            font-size: 20px;
+            line-height: 1;
+            margin-bottom: 7px;
+        }
+
+        .summary-item span {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 12px;
+        }
+
+        .panel {
+            padding: 30px;
+            background: var(--surface);
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .toolbar-title {
+            min-width: 0;
+        }
+
+        .toolbar-title h2 {
+            margin: 0 0 6px;
+            font-size: 21px;
+            letter-spacing: 0;
+        }
+
+        .toolbar-title p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-pill {
+            flex: 0 0 auto;
+            padding: 9px 12px;
+            border: 1px solid rgba(0, 160, 168, 0.28);
+            border-radius: 999px;
+            color: #66ecf0;
+            background: rgba(0, 160, 168, 0.12);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        #resultArea {
+            display: grid;
+            gap: 12px;
+            min-height: 348px;
+            margin-bottom: 18px;
+        }
+
+        .empty-state {
+            min-height: 348px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            padding: 28px;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, rgba(124, 92, 255, 0.11), rgba(0, 160, 168, 0.08)),
+                var(--surface-soft);
+            color: var(--muted);
+            line-height: 1.6;
+            word-break: keep-all;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--line);
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+            color: #a99cff;
+            font-size: 28px;
         }
 
         .game-row {
-            display: flex;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: 46px 1fr;
             align-items: center;
-            gap: 8px;
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 10px;
-            animation: fadeIn 0.5s ease;
+            gap: 12px;
+            padding: 13px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.035) 100%);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+            animation: fadeIn 0.38s ease both;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         .row-label {
-            font-weight: bold;
-            color: #333;
-            margin-right: 10px;
-            font-size: 18px;
-            width: 30px;
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: rgba(124, 92, 255, 0.16);
+            color: #b8adff;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .ball-list {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(34px, 1fr));
+            gap: 8px;
         }
 
         .ball {
-            width: 40px;
-            height: 40px;
+            aspect-ratio: 1;
+            min-width: 0;
+            display: grid;
+            place-items: center;
             border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 18px;
             color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2);
+            font-size: clamp(15px, 2vw, 18px);
+            font-weight: 900;
+            line-height: 1;
+            box-shadow:
+                inset 0 -8px 12px rgba(0, 0, 0, 0.16),
+                inset 0 5px 10px rgba(255, 255, 255, 0.22),
+                0 10px 20px rgba(0, 0, 0, 0.32);
         }
-        
-        .c1 { background-color: #fbc400; text-shadow: none; color: #333; } 
-        .c2 { background-color: #69c8f2; } 
-        .c3 { background-color: #ff7272; } 
-        .c4 { background-color: #aaaaaa; } 
-        .c5 { background-color: #b0d840; } 
 
-        .btn-group {
-            display: flex;
+        .c1 { background: var(--amber); color: #151922; }
+        .c2 { background: var(--blue); }
+        .c3 { background: var(--coral); }
+        .c4 { background: var(--gray); }
+        .c5 { background: var(--green); }
+
+        #statsArea {
+            display: none;
+            margin-bottom: 16px;
+            padding: 15px 16px;
+            border: 1px solid rgba(0, 160, 168, 0.24);
+            border-radius: 16px;
+            background: rgba(0, 160, 168, 0.10);
+            color: #cdecef;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        #statsArea b {
+            color: #f0ffff;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 10px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .actions.has-result {
+            grid-template-columns: 1.35fr 0.9fr;
         }
 
         button {
-            border: none;
-            padding: 15px 30px;
-            font-size: 16px;
-            border-radius: 50px;
+            min-height: 52px;
+            border: 0;
+            border-radius: 16px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            color: white;
+            font: inherit;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
         }
-        button:active { transform: scale(0.95); }
-        
+
+        button:active {
+            transform: translateY(1px) scale(0.99);
+        }
+
         .btn-gen {
-            background: linear-gradient(45deg, #673ab7, #512da8); 
-            width: 100%; 
+            color: white;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 14px 28px rgba(124, 92, 255, 0.28);
         }
-        .btn-gen:hover { box-shadow: 0 5px 15px rgba(103, 58, 183, 0.4); }
+
+        .btn-gen:hover {
+            box-shadow: 0 18px 34px rgba(124, 92, 255, 0.36);
+        }
 
         .btn-copy {
-            background: #009688; 
-            display: none; 
-            flex: 1;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+            color: white;
+            background: linear-gradient(135deg, var(--teal), #0a6c78);
+            box-shadow: 0 14px 28px rgba(0, 160, 168, 0.24);
         }
-        @keyframes popIn {
-            from { opacity: 0; transform: scale(0.5); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .btn-copy:hover { box-shadow: 0 5px 15px rgba(0, 150, 136, 0.4); }
 
-        /* 경고 박스 스타일 (빨간색) */
-        .log-area {
-            font-size: 13px;
-            color: #721c24; /* 진한 빨강 글씨 */
-            background: #f8d7da; /* 연한 빨강 배경 */
-            padding: 15px;
-            border-radius: 8px;
-            line-height: 1.6;
-            border: 1px solid #f5c6cb; /* 테두리 */
-            word-break: keep-all; /* 단어 단위 줄바꿈 */
+        .btn-copy:hover {
+            box-shadow: 0 18px 34px rgba(0, 160, 168, 0.30);
+        }
+
+        .notice {
+            padding: 15px 16px;
+            border: 1px solid rgba(246, 189, 79, 0.28);
+            border-radius: 16px;
+            background: rgba(246, 189, 79, 0.10);
+            color: #f3d7a1;
+            font-size: 12px;
+            line-height: 1.65;
+            word-break: keep-all;
+        }
+
+        .notice b {
+            color: #ffe6b3;
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            z-index: 10;
+            padding: 12px 16px;
+            border-radius: 999px;
+            color: white;
+            background: rgba(5, 7, 12, 0.94);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+            font-size: 14px;
+            font-weight: 800;
+            transform: translate(-50%, 20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        @media (max-width: 780px) {
+            body {
+                padding: 16px;
+                align-items: start;
+            }
+
+            .app {
+                grid-template-columns: 1fr;
+                border-radius: 20px;
+            }
+
+            .intro,
+            .panel {
+                padding: 24px;
+            }
+
+            h1 {
+                margin-top: 22px;
+            }
+
+            .summary {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 0;
+                background: #080b12;
+            }
+
+            .app {
+                min-height: 100vh;
+                border: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .intro,
+            .panel {
+                padding: 22px 16px;
+            }
+
+            .summary {
+                gap: 8px;
+            }
+
+            .summary-item {
+                padding: 12px 10px;
+            }
+
+            .game-row {
+                grid-template-columns: 38px 1fr;
+                gap: 9px;
+                padding: 10px;
+                border-radius: 15px;
+            }
+
+            .row-label {
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                font-size: 15px;
+            }
+
+            .ball-list {
+                gap: 5px;
+            }
+
+            .actions.has-result {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <h1>⚖️ AI 로또번호 </h1>
-        <p class="desc">3년 통계 반영 + 자연스러운 섞임</p>
-        
-        <div id="resultArea">
-            <div style="color:#bbb; padding:50px;">
-                버튼을 누르면<br>균형 잡힌 번호가 나옵니다.
+    <main class="app">
+        <section class="intro" aria-labelledby="pageTitle">
+            <div>
+                <div class="brand">
+                    <span class="brand-mark">L</span>
+                    AI Lotto Generator
+                </div>
+                <h1 id="pageTitle">로또 번호를 더 보기 좋게.</h1>
+                <p class="desc">
+                    통계 가중치, 번호대 분산, 조합 균형을 반영해 5게임을 생성합니다.
+                    결과는 한눈에 비교하기 쉽도록 정리됩니다.
+                </p>
             </div>
-        </div>
 
-        <div class="btn-group">
-            <button onclick="drawFiveGames()" class="btn-gen" id="btnGen">🎲 5게임 생성하기</button>
-            <button onclick="copyNumbers()" class="btn-copy" id="btnCopy">📋 전체 복사</button>
-        </div>
+            <div class="summary" aria-label="생성 기준 요약">
+                <div class="summary-item">
+                    <strong>5</strong>
+                    <span>게임</span>
+                </div>
+                <div class="summary-item">
+                    <strong>45</strong>
+                    <span>번호 범위</span>
+                </div>
+                <div class="summary-item">
+                    <strong>6</strong>
+                    <span>번호 조합</span>
+                </div>
+            </div>
+        </section>
 
-        <div class="log-area">
-            ⚠️ <b>경고:</b> 이 프로그램은 과거 통계에 단순 가중치를 부여한 시뮬레이션입니다.<br>
-            <b>과학적 당첨 확률을 절대 보장하지 않으며,</b> 실제 로또 당첨 확률과는 무관할 수 있습니다.<br>
-            재미로만 즐겨주세요. 과도한 몰입은 금물입니다!
-        </div>
-    </div>
+        <section class="panel">
+            <div class="toolbar">
+                <div class="toolbar-title">
+                    <h2>추천 번호</h2>
+                    <p>버튼을 누르면 새 조합이 생성됩니다.</p>
+                </div>
+                <div class="status-pill">균형 최적화</div>
+            </div>
+
+            <div id="resultArea" aria-live="polite">
+                <div class="empty-state">
+                    <div>
+                        <div class="empty-icon">↻</div>
+                        <b>아직 생성된 번호가 없습니다.</b><br>
+                        아래 버튼을 눌러 5게임 조합을 만들어보세요.
+                    </div>
+                </div>
+            </div>
+
+            <div id="statsArea"></div>
+
+            <div class="actions" id="actions">
+                <button onclick="drawFiveGames()" class="btn-gen" id="btnGen">5게임 생성하기</button>
+                <button onclick="copyNumbers()" class="btn-copy" id="btnCopy">전체 복사</button>
+            </div>
+
+            <div class="notice">
+                <b>안내:</b> 이 프로그램은 과거 통계 가중치와 조합 분산 점수를 활용한 시뮬레이션입니다.
+                당첨 확률을 보장하지 않으며 실제 로또 추첨은 무작위입니다. 재미로만 이용해주세요.
+            </div>
+        </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
         let clipboardText = "";
+        const LOTTO_MAX = 45;
+        const GAME_SIZE = 6;
+        const GAME_COUNT = 5;
+
+        const steadyHot = [12, 13, 33, 34, 45];
+        const potentialHot = [3, 6, 7, 18, 19, 27, 30, 43];
+        const mildCold = [9, 22, 32];
+        const statWeights = createStatWeights();
+
+        function rand() {
+            const buf = new Uint32Array(1);
+            crypto.getRandomValues(buf);
+            return buf[0] / 0x100000000;
+        }
+
+        function randInt(n) {
+            return Math.floor(rand() * n);
+        }
+
+        function createStatWeights() {
+            const w = Array(LOTTO_MAX + 1).fill(1.0);
+            steadyHot.forEach(n => w[n] = 1.22);
+            potentialHot.forEach(n => w[n] = 1.10);
+            mildCold.forEach(n => w[n] = 0.92);
+            return w;
+        }
 
         function drawFiveGames() {
-            const container = document.getElementById('resultArea');
-            container.innerHTML = ''; 
-            clipboardText = "[AI 로또 (밸런스형)]\n"; 
-            
-            const labels = ['A', 'B', 'C', 'D', 'E']; 
+            const container = document.getElementById("resultArea");
+            container.innerHTML = "";
+            clipboardText = "[AI 로또 번호]\n";
 
-            for (let i = 0; i < 5; i++) {
-                const numbers = getWeightedNumbers();
-                createGameRow(container, labels[i], numbers);
-                clipboardText += `${labels[i]}: ${numbers.join(', ')}\n`;
+            const labels = ["A", "B", "C", "D", "E"];
+            const games = generateBalancedGames(GAME_COUNT);
+
+            for (let i = 0; i < games.length; i++) {
+                const numbers = games[i];
+                createGameRow(container, labels[i], numbers, i);
+                clipboardText += `${labels[i]}: ${numbers.join(", ")}\n`;
             }
 
+            renderStats(games);
             showCopyButton();
         }
 
         function showCopyButton() {
-            const btnGen = document.getElementById('btnGen');
-            const btnCopy = document.getElementById('btnCopy');
-            btnGen.style.width = 'auto';
-            btnGen.style.flex = '2';
-            btnCopy.style.display = 'block';
+            document.getElementById("actions").classList.add("has-result");
+            document.getElementById("btnCopy").style.display = "block";
         }
 
-        function getWeightedNumbers() {
-            const pool = [];
-            // 1. 기본 번호
-            for (let i = 1; i <= 45; i++) pool.push(i);
-
-            // 2. 가중치 설정 (밸런스형)
-            // 상위권 번호 가중치 (3개 추가)
-            const steadyHot = [12, 13, 33, 34, 45]; 
-            steadyHot.forEach(num => { for(let k=0; k<3; k++) pool.push(num); });
-
-            // 차순위 번호 가중치 (1개 추가)
-            const potentialHot = [3, 6, 7, 18, 19, 27, 30, 43]; 
-            potentialHot.forEach(num => { for(let k=0; k<1; k++) pool.push(num); });
-
-            const result = new Set();
-            while(result.size < 6) {
-                const randomIndex = Math.floor(Math.random() * pool.length);
-                result.add(pool[randomIndex]);
+        function pickWeighted(options) {
+            const total = options.reduce((s, o) => s + o.weight, 0);
+            let target = rand() * total;
+            for (const o of options) {
+                target -= o.weight;
+                if (target <= 0) return o.num;
             }
-            return Array.from(result).sort((a, b) => a - b);
+            return options[options.length - 1].num;
         }
 
-        function createGameRow(container, labelText, numbers) {
-            const row = document.createElement('div');
-            row.className = 'game-row';
+        function createInitialGame() {
+            const selected = [];
+            while (selected.length < GAME_SIZE) {
+                const options = [];
+                for (let n = 1; n <= LOTTO_MAX; n++) {
+                    if (selected.includes(n)) continue;
 
-            const label = document.createElement('span');
-            label.className = 'row-label';
+                    let w = statWeights[n];
+                    const decadeStart = Math.floor((n - 1) / 10) * 10 + 1;
+                    const sameDecade = selected.filter(s => s >= decadeStart && s <= decadeStart + 9).length;
+                    if (sameDecade >= 2) w *= 0.5;
+                    if (selected.some(s => Math.abs(s - n) === 1)) w *= 0.75;
+
+                    options.push({ num: n, weight: w });
+                }
+                selected.push(pickWeighted(options));
+            }
+            return selected.sort((a, b) => a - b);
+        }
+
+        function generateBalancedGames(count) {
+            let best = null;
+            let bestScore = -Infinity;
+
+            for (let restart = 0; restart < 3; restart++) {
+                const games = [];
+                for (let i = 0; i < count; i++) games.push(createInitialGame());
+
+                const result = simulatedAnneal(games);
+                if (result.score > bestScore) {
+                    bestScore = result.score;
+                    best = result.games;
+                }
+            }
+            return best;
+        }
+
+        function simulatedAnneal(games) {
+            let current = games.map(g => [...g]);
+            let currentScore = totalScore(current);
+            let best = current.map(g => [...g]);
+            let bestScore = currentScore;
+
+            const ITER = 5000;
+            const T0 = 2.0;
+            const Tend = 0.04;
+
+            for (let iter = 0; iter < ITER; iter++) {
+                const T = T0 * Math.pow(Tend / T0, iter / ITER);
+                const gi = randInt(GAME_COUNT);
+                const game = current[gi];
+                const swapIdx = randInt(GAME_SIZE);
+                const oldNum = game[swapIdx];
+
+                let newNum;
+                do {
+                    newNum = randInt(LOTTO_MAX) + 1;
+                } while (game.includes(newNum));
+
+                game[swapIdx] = newNum;
+                game.sort((a, b) => a - b);
+
+                const newScore = totalScore(current);
+                const delta = newScore - currentScore;
+
+                if (delta > 0 || rand() < Math.exp(delta / T)) {
+                    currentScore = newScore;
+                    if (newScore > bestScore) {
+                        bestScore = newScore;
+                        best = current.map(g => [...g]);
+                    }
+                } else {
+                    const idx = game.indexOf(newNum);
+                    game[idx] = oldNum;
+                    game.sort((a, b) => a - b);
+                }
+            }
+            return { games: best, score: bestScore };
+        }
+
+        function totalScore(games) {
+            let s = 0;
+            for (const g of games) {
+                s += avgStatWeight(g) * 1.0;
+                s += oddEvenScore(g);
+                s += lowHighScore(g);
+                s += sumScore(g);
+                s += rangeScore(g);
+                s += consecutiveScore(g);
+                s += endingDigitScore(g);
+                s += antiPopularPenalty(g);
+            }
+            s += setCoverageScore(games);
+            s += pairOverlapScore(games);
+            s += usageDistributionScore(games);
+            return s;
+        }
+
+        function avgStatWeight(numbers) {
+            return numbers.reduce((sum, n) => sum + statWeights[n], 0) / GAME_SIZE;
+        }
+
+        function oddEvenScore(numbers) {
+            const odd = numbers.filter(n => n % 2 === 1).length;
+            if (odd >= 2 && odd <= 4) return 0.85;
+            if (odd === 1 || odd === 5) return -0.35;
+            return -1.4;
+        }
+
+        function lowHighScore(numbers) {
+            const low = numbers.filter(n => n <= 22).length;
+            if (low >= 2 && low <= 4) return 0.75;
+            if (low === 1 || low === 5) return -0.25;
+            return -1.2;
+        }
+
+        function sumScore(numbers) {
+            const total = numbers.reduce((s, n) => s + n, 0);
+            if (total >= 100 && total <= 176) return 1.3;
+            const dist = total < 100 ? 100 - total : total - 176;
+            return Math.max(-1.6, 1.3 - dist / 16);
+        }
+
+        function rangeScore(numbers) {
+            const counts = [0, 0, 0, 0, 0];
+            numbers.forEach(n => counts[Math.floor((n - 1) / 10)]++);
+            const used = counts.filter(c => c > 0).length;
+            const crowded = counts.filter(c => c >= 3).length;
+            const overcrowded = counts.filter(c => c >= 4).length;
+            return used * 0.4 - crowded * 0.9 - overcrowded * 1.5;
+        }
+
+        function consecutiveScore(numbers) {
+            let pairs = 0;
+            let triples = 0;
+            for (let i = 1; i < numbers.length; i++) {
+                if (numbers[i] - numbers[i - 1] === 1) {
+                    pairs++;
+                    if (i >= 2 && numbers[i - 1] - numbers[i - 2] === 1) triples++;
+                }
+            }
+            if (pairs === 0) return 0.4;
+            if (pairs === 1 && triples === 0) return 0.25;
+            return -pairs * 0.85 - triples * 1.6;
+        }
+
+        function endingDigitScore(numbers) {
+            const counts = Array(10).fill(0);
+            numbers.forEach(n => counts[n % 10]++);
+            const maxSame = Math.max(...counts);
+            return maxSame <= 2 ? 0.35 : -(maxSame - 2) * 0.9;
+        }
+
+        function antiPopularPenalty(numbers) {
+            let p = 0;
+
+            const birthday = numbers.filter(n => n <= 31).length;
+            if (birthday === 6) p -= 1.8;
+            else if (birthday === 5) p -= 0.5;
+
+            for (let d = 1; d <= 8; d++) {
+                let chain = 1;
+                let maxChain = 1;
+                for (let i = 1; i < numbers.length; i++) {
+                    if (numbers[i] - numbers[i - 1] === d) {
+                        chain++;
+                        if (chain > maxChain) maxChain = chain;
+                    } else {
+                        chain = 1;
+                    }
+                }
+                if (maxChain >= 4) p -= (maxChain - 3) * 1.6;
+            }
+
+            const m5 = numbers.filter(n => n % 5 === 0).length;
+            if (m5 >= 4) p -= (m5 - 3) * 0.85;
+
+            const decades = new Set(numbers.map(n => Math.floor((n - 1) / 10)));
+            if (decades.size === 1) p -= 2.5;
+            if (decades.size === 2) p -= 0.4;
+
+            const seven = numbers.filter(n => n % 10 === 7).length;
+            if (seven >= 3) p -= 0.55;
+
+            return p;
+        }
+
+        function setCoverageScore(games) {
+            const all = new Set();
+            games.forEach(g => g.forEach(n => all.add(n)));
+            const cov = all.size;
+            if (cov >= 22 && cov <= 26) return 1.6;
+            if (cov >= 20 && cov <= 28) return 0.6;
+            if (cov >= 18) return -0.5;
+            return -1.8;
+        }
+
+        function pairOverlapScore(games) {
+            let s = 0;
+            for (let i = 0; i < games.length; i++) {
+                for (let j = i + 1; j < games.length; j++) {
+                    const ov = games[i].filter(n => games[j].includes(n)).length;
+                    if (ov === 0) s += 0.25;
+                    else if (ov === 1) s += 0.45;
+                    else if (ov === 2) s += 0.0;
+                    else s -= (ov - 2) * 3.2;
+                }
+            }
+            return s;
+        }
+
+        function usageDistributionScore(games) {
+            const usage = Array(LOTTO_MAX + 1).fill(0);
+            games.forEach(g => g.forEach(n => usage[n]++));
+            const maxU = Math.max(...usage);
+            if (maxU >= 4) return -3.5 * (maxU - 3);
+            if (maxU === 3) return -0.8;
+            return 0.5;
+        }
+
+        function renderStats(games) {
+            const allNums = new Set();
+            const usage = Array(LOTTO_MAX + 1).fill(0);
+            games.forEach(g => g.forEach(n => {
+                allNums.add(n);
+                usage[n]++;
+            }));
+            const maxU = Math.max(...usage);
+
+            let maxPair = 0;
+            for (let i = 0; i < games.length; i++) {
+                for (let j = i + 1; j < games.length; j++) {
+                    const ov = games[i].filter(n => games[j].includes(n)).length;
+                    if (ov > maxPair) maxPair = ov;
+                }
+            }
+
+            const lines = games.map((g, i) => {
+                const sum = g.reduce((s, n) => s + n, 0);
+                const odd = g.filter(n => n % 2 === 1).length;
+                const low = g.filter(n => n <= 22).length;
+                return `${"ABCDE"[i]} 합계 ${sum} · 홀짝 ${odd}:${6 - odd} · 저고 ${low}:${6 - low}`;
+            }).join("<br>");
+
+            const statsArea = document.getElementById("statsArea");
+            statsArea.innerHTML =
+                `<b>조합 분석</b><br>${lines}<br>` +
+                `<br>커버리지 ${allNums.size}/45 · 최대 중복 ${maxU}회 · 최대 게임 간 겹침 ${maxPair}개`;
+            statsArea.style.display = "block";
+        }
+
+        function createGameRow(container, labelText, numbers, index) {
+            const row = document.createElement("div");
+            row.className = "game-row";
+            row.style.animationDelay = `${index * 0.04}s`;
+
+            const label = document.createElement("span");
+            label.className = "row-label";
             label.innerText = labelText;
             row.appendChild(label);
 
+            const ballList = document.createElement("div");
+            ballList.className = "ball-list";
+
             numbers.forEach(num => {
-                const ball = document.createElement('div');
+                const ball = document.createElement("div");
                 ball.className = `ball ${getColorClass(num)}`;
                 ball.innerText = num;
-                row.appendChild(ball);
+                ballList.appendChild(ball);
             });
+
+            row.appendChild(ballList);
             container.appendChild(row);
         }
 
         function getColorClass(num) {
-            if (num <= 10) return 'c1'; 
-            if (num <= 20) return 'c2'; 
-            if (num <= 30) return 'c3'; 
-            if (num <= 40) return 'c4'; 
-            return 'c5'; 
+            if (num <= 10) return "c1";
+            if (num <= 20) return "c2";
+            if (num <= 30) return "c3";
+            if (num <= 40) return "c4";
+            return "c5";
         }
 
         function copyNumbers() {
             navigator.clipboard.writeText(clipboardText).then(() => {
-                alert("복사되었습니다!");
-            }).catch(err => {
-                alert("복사 실패");
+                showToast("번호를 복사했습니다.");
+            }).catch(() => {
+                showToast("복사에 실패했습니다.");
             });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            window.clearTimeout(showToast.timer);
+            showToast.timer = window.setTimeout(() => {
+                toast.classList.remove("show");
+            }, 1600);
         }
     </script>
 </body>
