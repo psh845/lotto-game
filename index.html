@@ -511,6 +511,7 @@
             <div class="notice">
                 <b>안내:</b> 역대 당첨번호의 패턴 분포를 흉내 낸 시뮬레이션입니다.
                 번호별 출현 빈도 차이는 통계적으로 무작위 수준이라 가중치는 아주 약하게만 반영합니다.
+                사람들이 많이 고르는 조합은 피해서, 당첨 시 당첨금을 나눠 가질 사람을 줄입니다.
                 당첨 확률을 높여주지 않으며 실제 추첨은 무작위입니다. 재미로만 이용해주세요.
             </div>
         </section>
@@ -663,16 +664,13 @@
         const LATEST_DRAW = DRAWS[DRAWS.length - 1];
         const PATTERN = buildPatternStats(DRAWS);
         const numberWeights = buildNumberWeights(DRAWS);
+        const PAST_WINNERS = new Set(DRAWS.map(d => d.join(",")));
         document.getElementById("roundCount").textContent = LATEST_ROUND;
 
         function rand() {
             const buf = new Uint32Array(1);
             crypto.getRandomValues(buf);
             return buf[0] / 0x100000000;
-        }
-
-        function randInt(n) {
-            return Math.floor(rand() * n);
         }
 
         function decodeDraws(text) {
@@ -814,6 +812,31 @@
             return games.every(g => overlapCount(g, numbers) <= MAX_PAIR_OVERLAP);
         }
 
+        // 같은 간격으로 4개 이상 이어지는 구간 (예: 5, 10, 15, 20)
+        function hasArithmeticRun(numbers) {
+            let run = 2;
+            for (let i = 2; i < numbers.length; i++) {
+                run = numbers[i] - numbers[i - 1] === numbers[i - 1] - numbers[i - 2] ? run + 1 : 2;
+                if (run >= 4) return true;
+            }
+            return false;
+        }
+
+        // 사람들이 많이 고르는 조합. 당첨 확률은 어떤 조합이든 같으므로
+        // 이걸 피하면 당첨 시 당첨금을 나눠 가질 사람만 줄어든다.
+        function isPopularCombo(numbers) {
+            if (hasArithmeticRun(numbers)) return true;
+            if (new Set(numbers.map(n => Math.floor((n - 1) / 10))).size === 1) return true;
+            if (overlapCount(numbers, LATEST_DRAW) >= 4) return true;
+            if (PAST_WINNERS.has(numbers.join(","))) return true;
+            // 생일 숫자(1~31)로만 된 조합은 실제 당첨번호에도 약 9% 있으므로 절반만 거른다.
+            return numbers[GAME_SIZE - 1] <= 31 && rand() < 0.5;
+        }
+
+        function isAcceptable(numbers, games, usage) {
+            return isDiverse(numbers, games, usage) && !isPopularCombo(numbers);
+        }
+
         // 게임마다 실제 분포에서 패턴(홀짝·저고·연번·이월)을 하나 뽑고,
         // 가중치 추첨으로 그 패턴에 맞는 조합이 나올 때까지 거절 샘플링한다.
         function generateGame(games, usage) {
@@ -822,14 +845,14 @@
                 for (let t = 0; t < 4000; t++) {
                     const numbers = drawWeightedGame();
                     if (!matchesProfile(numbers, profile)) continue;
-                    if (!isDiverse(numbers, games, usage)) continue;
+                    if (!isAcceptable(numbers, games, usage)) continue;
                     return numbers;
                 }
             }
             let numbers;
             do {
                 numbers = drawWeightedGame();
-            } while (!isDiverse(numbers, games, usage));
+            } while (!isAcceptable(numbers, games, usage));
             return numbers;
         }
 
@@ -859,7 +882,8 @@
             statsArea.innerHTML =
                 `<b>조합 분석</b><br>${lines}<br>` +
                 `<br>커버리지 ${allNums.size}/45 · 이월 기준 ${LATEST_ROUND}회 (${LATEST_DRAW.join(", ")})` +
-                `<br>분석 데이터 1~${LATEST_ROUND}회 (${DRAW_DATA_LATEST_DATE} 추첨까지)`;
+                `<br>분석 데이터 1~${LATEST_ROUND}회 (${DRAW_DATA_LATEST_DATE} 추첨까지)` +
+                `<br>인기 조합(등간격·과거 1등·직전 회차 4개 이상 등) 제외 적용`;
             statsArea.style.display = "block";
         }
 
